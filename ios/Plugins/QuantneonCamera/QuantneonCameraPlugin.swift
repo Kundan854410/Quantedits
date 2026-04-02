@@ -28,6 +28,9 @@ struct ExpressionAnalysisResult: Codable {
 @objc(QuantneonCameraPlugin)
 public class QuantneonCameraPlugin: CAPPlugin, CAPBridgedPlugin {
 
+    /// Tag used to identify the Quantneon aura overlay view for removal.
+    private static let auraOverlayTag = 9999
+
     public let identifier = "QuantneonCameraPlugin"
     public let jsName = "QuantneonCamera"
     public let pluginMethods: [CAPPluginMethod] = [
@@ -320,7 +323,7 @@ public class QuantneonCameraPlugin: CAPPlugin, CAPBridgedPlugin {
             guard let self = self else { return }
 
             let auraView = UIView(frame: viewController.view.bounds)
-            auraView.tag = 9999 // Tag for later removal
+            auraView.tag = QuantneonCameraPlugin.auraOverlayTag
             auraView.isUserInteractionEnabled = false
             auraView.backgroundColor = .clear
 

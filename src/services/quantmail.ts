@@ -127,7 +127,7 @@ class QuantmailRewardService {
   /** Create a new VIP Reward token. */
   private createToken(expression: FacialExpression): VipRewardToken {
     const token: VipRewardToken = {
-      tokenId: `qm-vip-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      tokenId: `qm-vip-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`,
       triggeredBy: expression,
       createdAt: new Date().toISOString(),
       points: this.config.pointsPerReward,

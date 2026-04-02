@@ -93,6 +93,11 @@ data class ExpressionAnalysisResult(
 )
 class QuantneonCameraPlugin : Plugin() {
 
+    companion object {
+        /** Tag used to identify the Quantneon aura overlay view for removal. */
+        const val AURA_OVERLAY_TAG = "quantneon_aura_overlay"
+    }
+
     // Camera & Recording
     private var cameraProvider: ProcessCameraProvider? = null
     private var videoCapture: VideoCapture<Recorder>? = null
@@ -447,7 +452,7 @@ class QuantneonCameraPlugin : Plugin() {
                 )
                 isClickable = false
                 isFocusable = false
-                tag = "quantneon_aura_overlay"
+                tag = AURA_OVERLAY_TAG
 
                 // Radial gradient glow
                 val glowColor = parseHexColor(auraGlowColor)
