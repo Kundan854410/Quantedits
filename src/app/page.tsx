@@ -8,6 +8,7 @@ import VideoDropZone, { type DroppedFile } from "@/components/VideoDropZone";
 import DeepDub from "@/components/DeepDub";
 import HookGenerator, { type Highlight } from "@/components/HookGenerator";
 import PublishRouter from "@/components/PublishRouter";
+import ReelCapture from "@/components/ReelCapture";
 import Timeline from "@/components/Timeline";
 
 export default function Home() {
@@ -198,6 +199,15 @@ export default function Home() {
                 durationEstimate={droppedFile?.durationEstimate}
                 onHighlightsReady={setHighlights}
               />
+            </motion.div>
+
+            {/* Reel Capture — Quantneon + Quantmail integration */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <ReelCapture />
             </motion.div>
           </div>
         </div>
