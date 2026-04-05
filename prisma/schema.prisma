@@ -77,6 +77,8 @@ model Asset {
   quanttubeId  String?
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
+
+  @@unique([userId, quanttubeId])
 }
 
 enum AssetType {

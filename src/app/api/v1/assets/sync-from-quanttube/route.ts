@@ -195,17 +195,10 @@ export async function POST(request: NextRequest) {
     const assetType = asset.type as AssetType;
     const record = await prisma.asset.upsert({
       where: {
-        // Use a compound unique approach: quanttubeId + userId
-        // We synthesise this with a findFirst + upsert pattern
-        id: (
-          await prisma.asset.findFirst({
-            where: {
-              quanttubeId: asset.id,
-              userId: jwtPayload.sub,
-            },
-            select: { id: true },
-          })
-        )?.id ?? "new",
+        userId_quanttubeId: {
+          userId: jwtPayload.sub,
+          quanttubeId: asset.id,
+        },
       },
       update: {
         title: asset.title,

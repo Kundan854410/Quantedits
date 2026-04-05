@@ -14,6 +14,8 @@ jobs:
   lint-and-typecheck:
     name: Lint & Type-check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -39,6 +41,8 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     needs: lint-and-typecheck
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -67,6 +71,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
