@@ -127,9 +127,7 @@ async function fetchTrendingFromQuanttube(
     },
   ];
 
-  return stub
-    .filter((a) => types.includes(a.type))
-    .slice(0, limit);
+  return stub.filter((a) => types.includes(a.type)).slice(0, limit);
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -176,19 +174,20 @@ export async function POST(request: NextRequest) {
   }
 
   const { limit, types } = parseResult.data;
-
-  log.info({ userId: jwtPayload.sub, types, limit }, "Syncing assets from Quanttube");
-
-  // Ensure the user exists in our DB (upsert on first sync)
-  await prisma.user.upsert({
+  const user = await prisma.user.upsert({
     where: { quantmailId: jwtPayload.sub },
-    update: {},
+    update: {
+      email: jwtPayload.email,
+      displayName: jwtPayload.display_name ?? jwtPayload.email,
+    },
     create: {
       quantmailId: jwtPayload.sub,
       email: jwtPayload.email,
       displayName: jwtPayload.display_name ?? jwtPayload.email,
     },
   });
+
+  log.info({ userId: user.id, types, limit }, "Syncing assets from Quanttube");
 
   // Fetch trending from Quanttube
   const authHeader = request.headers.get("authorization") ?? "";
@@ -202,7 +201,7 @@ export async function POST(request: NextRequest) {
     const record = await prisma.asset.upsert({
       where: {
         userId_quanttubeId: {
-          userId: jwtPayload.sub,
+          userId: user.id,
           quanttubeId: asset.id,
         },
       },
@@ -215,7 +214,7 @@ export async function POST(request: NextRequest) {
         metadata: asset.metadata as object,
       },
       create: {
-        userId: jwtPayload.sub,
+        userId: user.id,
         type: assetType,
         title: asset.title,
         url: asset.url,
@@ -230,7 +229,7 @@ export async function POST(request: NextRequest) {
     upserted.push(record.id);
   }
 
-  log.info({ userId: jwtPayload.sub, synced: upserted.length }, "Asset sync complete");
+  log.info({ userId: user.id, synced: upserted.length }, "Asset sync complete");
 
   return Response.json(
     {

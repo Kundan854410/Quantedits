@@ -29,7 +29,8 @@ export interface QuantmailJwtPayload {
 }
 
 const QUANTMAIL_JWT_SECRET =
-  process.env.QUANTMAIL_JWT_SECRET ?? "quantmail-dev-secret";
+  process.env.QUANTMAIL_JWT_SECRET ??
+  (process.env.NODE_ENV === "production" ? undefined : "quantmail-dev-secret");
 
 /**
  * Verify a Quantmail JWT string and return the decoded payload.
@@ -37,6 +38,10 @@ const QUANTMAIL_JWT_SECRET =
  * proof flag.
  */
 export function verifyQuantmailJwt(token: string): QuantmailJwtPayload {
+  if (!QUANTMAIL_JWT_SECRET) {
+    throw new Error("QUANTMAIL_JWT_SECRET is not configured");
+  }
+
   const payload = jwt.verify(token, QUANTMAIL_JWT_SECRET) as QuantmailJwtPayload;
 
   if (!payload.biometric) {

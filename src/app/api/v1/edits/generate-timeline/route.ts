@@ -238,8 +238,20 @@ export async function POST(request: NextRequest) {
   }
 
   const { prompt, projectId, durationSec } = parseResult.data;
+  const user = await prisma.user.upsert({
+    where: { quantmailId: jwtPayload.sub },
+    update: {
+      email: jwtPayload.email,
+      displayName: jwtPayload.display_name ?? jwtPayload.email,
+    },
+    create: {
+      quantmailId: jwtPayload.sub,
+      email: jwtPayload.email,
+      displayName: jwtPayload.display_name ?? jwtPayload.email,
+    },
+  });
 
-  log.info({ userId: jwtPayload.sub, prompt, durationSec }, "Generating timeline");
+  log.info({ userId: user.id, prompt, durationSec }, "Generating timeline");
 
   // Validate project belongs to user (if provided)
   if (projectId) {
@@ -254,7 +266,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (project.userId !== jwtPayload.sub) {
+    if (project.userId !== user.id) {
       return Response.json(
         { error: "Forbidden", code: "FORBIDDEN" },
         { status: 403 },
@@ -267,7 +279,7 @@ export async function POST(request: NextRequest) {
 
   // Persist to database
   const resolvedProjectId = await getOrCreateProject(
-    jwtPayload.sub,
+    user.id,
     projectId,
     prompt.slice(0, 80),
   );
