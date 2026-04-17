@@ -268,9 +268,14 @@ export class GenerativePipeline {
       totalSteps: diffusionSteps,
     });
 
+    const encoderOutput = encResult.outputs[0]?.dataBase64;
+    if (!encoderOutput) {
+      throw new Error("[GenerativePipeline] VAE encoder returned no output tensor.");
+    }
+
     const motionStrength = options.motionStrength ?? 0.85;
     const latentSequence = await this.runDiffusion(
-      encResult.outputs[0]?.dataBase64 ?? "",
+      encoderOutput,
       frameCount,
       diffusionSteps,
       motionStrength,
@@ -301,11 +306,18 @@ export class GenerativePipeline {
         elapsedMs:     performance.now() - t0,
       });
 
-      const decResult = await this.runVAEDecoder(
-        latentSequence[i] ?? latentSequence[0],
-        outputSize,
-      );
-      framesBase64.push(decResult.outputs[0]?.dataBase64 ?? "");
+      const frameLatent = latentSequence[i];
+      if (!frameLatent) {
+        throw new Error(
+          `[GenerativePipeline] Diffusion produced fewer latents than requested (got ${latentSequence.length}, need frame ${i}).`,
+        );
+      }
+      const decResult = await this.runVAEDecoder(frameLatent, outputSize);
+      const decoderOutput = decResult.outputs[0]?.dataBase64;
+      if (!decoderOutput) {
+        throw new Error(`[GenerativePipeline] VAE decoder returned no output for frame ${i}.`);
+      }
+      framesBase64.push(decoderOutput);
       peakMemory = Math.max(peakMemory, decResult.memoryUsedBytes);
     }
 

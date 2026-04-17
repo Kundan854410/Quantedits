@@ -225,14 +225,15 @@ public class NPUEnginePlugin: CAPPlugin, CAPBridgedPlugin {
             // Rebuild NSArray<NSNumber> for the shape
             let nsShape = shapeArray.map { NSNumber(value: $0) }
 
-            // Build MLMultiArray from raw Float32 bytes
+            // Build MLMultiArray from raw Float32 bytes using dataPointer
+            // to avoid per-element NSNumber boxing overhead.
             let count = shapeArray.reduce(1, *)
             let multiArray = try MLMultiArray(shape: nsShape as [NSNumber], dataType: .float32)
             data.withUnsafeBytes { (ptr: UnsafeRawBufferPointer) in
-                guard let f32Ptr = ptr.baseAddress?.assumingMemoryBound(to: Float32.self) else { return }
-                for idx in 0 ..< min(count, multiArray.count) {
-                    multiArray[idx] = NSNumber(value: f32Ptr[idx])
-                }
+                guard let src = ptr.baseAddress else { return }
+                let dst = multiArray.dataPointer
+                let byteCount = min(count * MemoryLayout<Float32>.size, data.count)
+                memcpy(dst, src, byteCount)
             }
 
             features[name] = MLFeatureValue(multiArray: multiArray)
@@ -251,12 +252,11 @@ public class NPUEnginePlugin: CAPPlugin, CAPBridgedPlugin {
             switch fv.type {
             case .multiArray:
                 guard let arr = fv.multiArrayValue else { continue }
-                var float32Data = Data(count: arr.count * MemoryLayout<Float32>.size)
+                let byteCount = arr.count * MemoryLayout<Float32>.size
+                var float32Data = Data(count: byteCount)
                 float32Data.withUnsafeMutableBytes { (ptr: UnsafeMutableRawBufferPointer) in
-                    guard let f32Ptr = ptr.baseAddress?.assumingMemoryBound(to: Float32.self) else { return }
-                    for i in 0 ..< arr.count {
-                        f32Ptr[i] = arr[i].floatValue
-                    }
+                    guard let dst = ptr.baseAddress else { return }
+                    memcpy(dst, arr.dataPointer, byteCount)
                 }
                 let shape = (0 ..< arr.shape.count).map { arr.shape[$0].intValue }
                 outputs.append([

@@ -12,7 +12,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Cpu, Play, Square, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
-import { generativePipeline, type GenerationProgress, type GenerationResult } from "@/services/GenerativePipeline";
+import { generativePipeline, GenerativePipeline, type GenerationProgress, type GenerationResult } from "@/services/GenerativePipeline";
 import { memoryManager } from "@/services/MemoryManager";
 import type { MemoryStats } from "@/plugins/npu-engine/definitions";
 
@@ -140,7 +140,7 @@ export default function GenerativePipelinePanel() {
         },
       );
 
-      GenerativePipeline_assertBudget(genResult.peakMemoryBytes);
+      GenerativePipeline.assertWithinBudget(genResult.peakMemoryBytes);
       setResult(genResult);
       setStatus("complete");
     } catch (err) {
@@ -352,14 +352,4 @@ export default function GenerativePipelinePanel() {
       </div>
     </div>
   );
-}
-
-// Forward reference to static helper (avoids importing GenerativePipeline class methods in JSX context)
-function GenerativePipeline_assertBudget(peakBytes: number): void {
-  const BUDGET = 1.5 * 1024 * 1024 * 1024;
-  if (peakBytes > BUDGET) {
-    console.warn(
-      `[GenerativePipeline] Peak memory ${(peakBytes / 1e9).toFixed(2)} GB exceeded 1.5 GB budget.`,
-    );
-  }
 }

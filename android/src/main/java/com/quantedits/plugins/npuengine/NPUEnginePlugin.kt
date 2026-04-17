@@ -213,10 +213,15 @@ class NPUEnginePlugin : Plugin() {
                 // Stub: echo inputs as outputs (identity model)
                 val outputs = JSArray()
                 inputs.forEach { (name, buf) ->
+                    // Use buf.get(byteArray) instead of buf.array() because
+                    // memory-mapped (direct) ByteBuffers do not support array().
+                    buf.rewind()
+                    val byteArray = ByteArray(buf.remaining())
+                    buf.get(byteArray)
                     val outObj = JSObject().apply {
                         put("name", "${name}_out")
-                        put("dataBase64", Base64.encodeToString(buf.array(), Base64.NO_WRAP))
-                        put("shape", JSArray().apply { put(buf.limit() / 4) })
+                        put("dataBase64", Base64.encodeToString(byteArray, Base64.NO_WRAP))
+                        put("shape", JSArray().apply { put(byteArray.size / 4) })
                     }
                     outputs.put(outObj)
                 }

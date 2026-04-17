@@ -221,7 +221,7 @@ export default function WebGLTimeline({
 
   // Build the list of clip rects from highlights
   const buildClipRects = useCallback(
-    (w: number, h: number): ClipRect[] => {
+    (): ClipRect[] => {
       if (!highlights.length) return [];
 
       const trackCount  = Math.min(highlights.length, 5);
@@ -230,10 +230,21 @@ export default function WebGLTimeline({
       const totalSec    = 120 * 60;
 
       return highlights.slice(0, 5).map<ClipRect>((h, i) => {
+        // Support both MM:SS and HH:MM:SS timecode formats
         const parts = h.startTimecode.split(":");
-        const sm  = parts.length === 2 ? Number(parts[0]) : 0;
-        const ss  = parts.length === 2 ? Number(parts[1]) : 0;
-        const startSec = (isNaN(sm) ? 0 : sm) * 60 + (isNaN(ss) ? 0 : ss);
+        let startSec = 0;
+        if (parts.length === 3) {
+          const hh = Number(parts[0]);
+          const mm = Number(parts[1]);
+          const ss = Number(parts[2]);
+          startSec = (isNaN(hh) ? 0 : hh) * 3600
+                   + (isNaN(mm) ? 0 : mm) * 60
+                   + (isNaN(ss) ? 0 : ss);
+        } else if (parts.length === 2) {
+          const mm = Number(parts[0]);
+          const ss = Number(parts[1]);
+          startSec = (isNaN(mm) ? 0 : mm) * 60 + (isNaN(ss) ? 0 : ss);
+        }
         const durSec   = parseInt(h.duration) || 10;
         const left  = startSec / totalSec;
         const width = Math.max(durSec / totalSec, 0.015);
@@ -247,8 +258,6 @@ export default function WebGLTimeline({
           labelText: `T${i + 1}`,
         };
       });
-
-      void w; void h; // suppress unused warnings
     },
     [highlights],
   );
@@ -317,7 +326,7 @@ export default function WebGLTimeline({
       gl.bindTexture(gl.TEXTURE_2D, tex);
       gl.uniform1i(gl.getUniformLocation(prog, "u_texture"), 0);
 
-      const clips = buildClipRects(cw, ch);
+      const clips = buildClipRects();
 
       // Draw clip fills
       clips.forEach((clip) => {
