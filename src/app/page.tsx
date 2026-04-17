@@ -11,6 +11,7 @@ import PublishRouter from "@/components/PublishRouter";
 import ReelCapture from "@/components/ReelCapture";
 import WebGLTimeline from "@/components/WebGLTimeline";
 import GenerativePipelinePanel from "@/components/GenerativePipelinePanel";
+import MusicStudio from "@/components/MusicStudio";
 import type { Track } from "@/engine/TimelineRenderer";
 
 export default function Home() {
@@ -249,6 +250,17 @@ export default function Home() {
                 >
                   <ReelCapture />
                 </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  <MusicStudio
+                    durationSec={droppedFile?.durationEstimate ? parseFloat(droppedFile.durationEstimate) : 30}
+                    fileName={droppedFile?.file.name}
+                  />
+                </motion.div>
               </div>
             </div>
 
@@ -419,6 +431,12 @@ export default function Home() {
                 </motion.div>
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
                   <ReelCapture />
+                </motion.div>
+                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+                  <MusicStudio
+                    durationSec={droppedFile?.durationEstimate ? parseFloat(droppedFile.durationEstimate) : 30}
+                    fileName={droppedFile?.file.name}
+                  />
                 </motion.div>
               </div>
             </div>
