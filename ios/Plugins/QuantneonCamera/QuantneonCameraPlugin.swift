@@ -109,6 +109,9 @@ public class QuantneonCameraPlugin: CAPPlugin, CAPBridgedPlugin {
             self.captureSession?.stopRunning()
             self.isRecording = false
 
+            // Remove the aura overlay once recording stops
+            self.removeAuraOverlay()
+
             let duration = Date().timeIntervalSince(self.recordingStartTime ?? Date())
             let snapshots = self.expressionSnapshots.map { snapshot -> [String: Any] in
                 return [
@@ -355,7 +358,16 @@ public class QuantneonCameraPlugin: CAPPlugin, CAPBridgedPlugin {
 
     // MARK: - Quantmail Reward Dispatch
 
-    /// Dispatch a VIP Reward token to the user's Quantmail inbox.
+    /// Remove the Quantneon aura overlay from the view hierarchy.
+    private func removeAuraOverlay() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self,
+                  let bridge = self.bridge,
+                  let viewController = bridge.viewController else { return }
+            viewController.view.viewWithTag(QuantneonCameraPlugin.auraOverlayTag)?.removeFromSuperview()
+        }
+    }
+
     private func dispatchQuantmailReward(tokenId: String, expression: FacialExpression) {
         // In production, this would make an API call to Quantmail.
         // For now, log the reward dispatch.

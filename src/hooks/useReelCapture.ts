@@ -73,6 +73,19 @@ export function useReelCapture(): [ReelCaptureState, ReelCaptureActions] {
     return unsubscribe;
   }, []);
 
+  // Clean up native plugin listeners when the component unmounts mid-recording
+  useEffect(() => {
+    return () => {
+      expressionListenerRef.current?.remove();
+      auraListenerRef.current?.remove();
+      rewardListenerRef.current?.remove();
+      // Only deactivate the aura if it was activated during this session
+      if (quantneon.getState().active) {
+        quantneon.deactivate();
+      }
+    };
+  }, []);
+
   const startRecording = useCallback(
     async (options?: StartRecordingOptions) => {
       try {
