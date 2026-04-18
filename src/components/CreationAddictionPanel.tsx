@@ -39,7 +39,7 @@ import type {
 import DraftAnxietyBanner from "./DraftAnxietyBanner";
 import QualityMeterCard from "./QualityMeterCard";
 import SocialValidationPreview from "./SocialValidationPreview";
-import StreakBadge from "./StreakBadge";
+import StreakBadge from "./CreationStreakBadge";
 import SuggestionToasts from "./SuggestionToasts";
 import TemplateFOMOCard from "./TemplateFOMOCard";
 
