@@ -12,7 +12,9 @@ import PublishRouter from "@/components/PublishRouter";
 import ReelCapture from "@/components/ReelCapture";
 import WebGLTimeline from "@/components/WebGLTimeline";
 import GenerativePipelinePanel from "@/components/GenerativePipelinePanel";
+import EngagementPanel from "@/components/EngagementPanel";
 import type { Track } from "@/engine/TimelineRenderer";
+import type { ProjectProbe } from "@/services/engagement/types";
 
 export default function Home() {
   const [droppedFile, setDroppedFile] = useState<DroppedFile | null>(null);
@@ -261,6 +263,28 @@ export default function Home() {
                     fileName={droppedFile?.file.name}
                   />
                 </motion.div>
+
+                {/* Engagement: honest quality, suggestions, streak, estimates, templates */}
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <EngagementPanel
+                    probe={
+                      droppedFile
+                        ? ({
+                            projectId:
+                              "draft-" + droppedFile.file.name.slice(0, 8),
+                            hasAudio: true,
+                            hasTitle: droppedFile.file.name.length > 0,
+                            cutCount: highlights.length,
+                            hasIntroHook: highlights.length > 0,
+                          } satisfies ProjectProbe)
+                        : null
+                    }
+                  />
+                </motion.div>
               </div>
             </div>
 
@@ -436,6 +460,21 @@ export default function Home() {
                   <MusicStudio
                     durationSec={droppedFile?.durationEstimate ? parseFloat(droppedFile.durationEstimate) : 30}
                     fileName={droppedFile?.file.name}
+                  />
+                </motion.div>
+                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+                  <EngagementPanel
+                    probe={
+                      droppedFile
+                        ? ({
+                            projectId: "draft-" + droppedFile.file.name.slice(0, 8),
+                            hasAudio: true,
+                            hasTitle: droppedFile.file.name.length > 0,
+                            cutCount: highlights.length,
+                            hasIntroHook: highlights.length > 0,
+                          } satisfies ProjectProbe)
+                        : null
+                    }
                   />
                 </motion.div>
               </div>
