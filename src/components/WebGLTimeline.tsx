@@ -117,6 +117,12 @@ export default function WebGLTimeline({
     initialTracks ?? createDefaultTracks(timelineId),
   );
 
+  useEffect(() => {
+    if (initialTracks) {
+      setTracks(initialTracks);
+    }
+  }, [initialTracks]);
+
   // ── Renderer initialisation ─────────────────────────────────────────────
 
   useEffect(() => {

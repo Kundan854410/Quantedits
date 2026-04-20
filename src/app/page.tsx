@@ -8,24 +8,78 @@ import VideoDropZone, { type DroppedFile } from "@/components/VideoDropZone";
 import DeepDub from "@/components/DeepDub";
 import HookGenerator, { type Highlight } from "@/components/HookGenerator";
 import MusicStudio from "@/components/MusicStudio";
+import PredictiveAssemblyPanel from "@/components/PredictiveAssemblyPanel";
 import PublishRouter from "@/components/PublishRouter";
 import ReelCapture from "@/components/ReelCapture";
 import WebGLTimeline from "@/components/WebGLTimeline";
 import GenerativePipelinePanel from "@/components/GenerativePipelinePanel";
 import EngagementPanel from "@/components/EngagementPanel";
-import type { Track } from "@/engine/TimelineRenderer";
+import { createDefaultTracks, type Track } from "@/engine/TimelineRenderer";
+import {
+  autoAssembler,
+  estimateDurationSeconds,
+  parseTimecodeToSeconds,
+  type AssemblyHookSignal,
+  type PredictiveAssemblyPlan,
+} from "@/services/AutoAssembler";
+import {
+  algoOptimizer,
+  type PredictiveOptimizationReport,
+} from "@/services/AlgoOptimizer";
 import type { ProjectProbe } from "@/services/engagement/types";
 
 export default function Home() {
   const [droppedFile, setDroppedFile] = useState<DroppedFile | null>(null);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
-  const [timelineTracks, setTimelineTracks] = useState<Track[]>([]);
+  const [timelineTracks, setTimelineTracks] = useState<Track[]>(() =>
+    createDefaultTracks("main"),
+  );
+  const [timelineDurationSec, setTimelineDurationSec] = useState(60);
   const [layout, setLayout] = useState<"classic" | "editor">("editor");
+  const [assemblyPrompt, setAssemblyPrompt] = useState("");
+  const [assemblyPlan, setAssemblyPlan] = useState<PredictiveAssemblyPlan | null>(
+    null,
+  );
+  const [optimizationReport, setOptimizationReport] =
+    useState<PredictiveOptimizationReport | null>(null);
 
-  const handleFileDrop = useCallback((file: DroppedFile) => {
-    setDroppedFile(file);
-    setHighlights([]);
-  }, []);
+  const updatePredictiveAssembly = useCallback(
+    (file: DroppedFile, nextHighlights: Highlight[], prompt = "") => {
+      const hookSignals: AssemblyHookSignal[] = nextHighlights.map((highlight) => ({
+        id: highlight.id,
+        title: highlight.title,
+        startTimeSec: parseTimecodeToSeconds(highlight.startTimecode),
+        endTimeSec: parseTimecodeToSeconds(highlight.endTimecode),
+        confidence: highlight.hookScore,
+      }));
+
+      const plan = autoAssembler.buildPlan({
+        timelineId: "main",
+        fileName: file.file.name,
+        durationSec: estimateDurationSeconds(file.durationEstimate),
+        fileSizeMB: file.file.size / (1024 * 1024),
+        prompt: prompt || undefined,
+        hooks: hookSignals,
+      });
+      const report = algoOptimizer.optimize(plan);
+
+      setAssemblyPlan(plan);
+      setOptimizationReport(report);
+      setTimelineTracks(plan.tracks);
+      setTimelineDurationSec(plan.targetDurationSec);
+    },
+    [],
+  );
+
+  const handleFileDrop = useCallback(
+    (file: DroppedFile) => {
+      setDroppedFile(file);
+      setHighlights([]);
+      setAssemblyPrompt("");
+      updatePredictiveAssembly(file, [], "");
+    },
+    [updatePredictiveAssembly],
+  );
 
   // Revoke object URL when droppedFile changes or component unmounts
   useEffect(() => {
@@ -38,6 +92,11 @@ export default function Home() {
   const handleClearFile = () => {
     setDroppedFile(null);
     setHighlights([]);
+    setAssemblyPrompt("");
+    setAssemblyPlan(null);
+    setOptimizationReport(null);
+    setTimelineTracks(createDefaultTracks("main"));
+    setTimelineDurationSec(60);
   };
 
   const handleAutoSave = useCallback(() => {
@@ -45,9 +104,21 @@ export default function Home() {
   }, []);
 
   const handlePromptGenerate = useCallback((prompt: string) => {
-    // In production: the response would populate new timeline tracks
-    void prompt;
-  }, []);
+    setAssemblyPrompt(prompt);
+    if (droppedFile) {
+      updatePredictiveAssembly(droppedFile, highlights, prompt);
+    }
+  }, [droppedFile, highlights, updatePredictiveAssembly]);
+
+  const handleHighlightsReady = useCallback(
+    (nextHighlights: Highlight[]) => {
+      setHighlights(nextHighlights);
+      if (droppedFile) {
+        updatePredictiveAssembly(droppedFile, nextHighlights, assemblyPrompt);
+      }
+    },
+    [assemblyPrompt, droppedFile, updatePredictiveAssembly],
+  );
 
   return (
     <div
@@ -241,7 +312,19 @@ export default function Home() {
                   <HookGenerator
                     fileName={droppedFile?.file.name}
                     durationEstimate={droppedFile?.durationEstimate}
-                    onHighlightsReady={setHighlights}
+                    onHighlightsReady={handleHighlightsReady}
+                  />
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25 }}
+                >
+                  <PredictiveAssemblyPanel
+                    plan={assemblyPlan}
+                    report={optimizationReport}
+                    sourceLabel={droppedFile?.file.name}
                   />
                 </motion.div>
 
@@ -259,7 +342,11 @@ export default function Home() {
                   transition={{ delay: 0.4 }}
                 >
                   <MusicStudio
-                    durationSec={droppedFile?.durationEstimate ? parseFloat(droppedFile.durationEstimate) : 30}
+                    durationSec={
+                      droppedFile
+                        ? estimateDurationSeconds(droppedFile.durationEstimate)
+                        : 30
+                    }
                     fileName={droppedFile?.file.name}
                   />
                 </motion.div>
@@ -333,7 +420,8 @@ export default function Home() {
             <div className="flex-1 overflow-hidden">
               <WebGLTimeline
                 timelineId="main"
-                durationSec={60}
+                initialTracks={timelineTracks}
+                durationSec={timelineDurationSec}
                 onTracksChange={setTimelineTracks}
               />
             </div>
@@ -341,7 +429,7 @@ export default function Home() {
             {/* AI Pipeline panel docked at very bottom */}
             <GenerativePipelinePanel
               tracks={timelineTracks}
-              durationSec={60}
+              durationSec={timelineDurationSec}
               onPromptGenerate={handlePromptGenerate}
               onAutoSave={handleAutoSave}
             />
@@ -523,4 +611,3 @@ export default function Home() {
     </div>
   );
 }
-
