@@ -4,7 +4,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Wallet, TrendingUp } from "lucide-react";
 import { TokenEngine } from "@/services/TokenEngine";
-import { AutoStakingVault } from "@/services/AutoStaking";
+import {
+  AutoStakingVault,
+  DEFAULT_AUTO_STAKING_APY,
+} from "@/services/AutoStaking";
 
 export interface WealthDashboardProps {
   userId: string;
@@ -50,7 +53,7 @@ export default function WealthDashboard({
   const [state, setState] = useState<WealthState>({
     offChainBalance: 0,
     stakedBalance: 0,
-    apy: 0.12,
+    apy: DEFAULT_AUTO_STAKING_APY,
     totalYieldEarned: 0,
     lostPotential30d: 0,
   });
@@ -63,34 +66,32 @@ export default function WealthDashboard({
     );
     const deltaComments = Math.max(0, comments - processedRef.current.comments);
 
+    let newlyEarned = 0;
     if (deltaLikes > 0) {
-      tokenEngineRef.current.recordInteraction(userId, {
+      const entry = tokenEngineRef.current.recordInteraction(userId, {
         type: "like",
         quantity: deltaLikes,
       });
+      newlyEarned += entry.amount;
     }
     if (deltaWatches > 0) {
-      tokenEngineRef.current.recordInteraction(userId, {
+      const entry = tokenEngineRef.current.recordInteraction(userId, {
         type: "watch_10s",
         quantity: deltaWatches,
       });
+      newlyEarned += entry.amount;
     }
     if (deltaComments > 0) {
-      tokenEngineRef.current.recordInteraction(userId, {
+      const entry = tokenEngineRef.current.recordInteraction(userId, {
         type: "comment",
         quantity: deltaComments,
       });
+      newlyEarned += entry.amount;
     }
 
-    const newlyEarned = Number(
-      (
-        deltaLikes * 0.001 +
-        deltaWatches * 0.005 +
-        deltaComments * 0.01
-      ).toFixed(6),
-    );
+    newlyEarned = Number(newlyEarned.toFixed(6));
     if (newlyEarned > 0) {
-      vaultRef.current.deposit(userId, newlyEarned, 0.18);
+      vaultRef.current.deposit(userId, newlyEarned);
     }
 
     processedRef.current = { likes, watch10sBlocks, comments };
@@ -109,7 +110,7 @@ export default function WealthDashboard({
   const graphPoints = useMemo(() => {
     const base = Math.max(state.stakedBalance, 0);
     const points: number[] = [];
-    for (let day = 0; day < 8; day += 1) {
+    for (let day = 0; day < 7; day += 1) {
       const projected = base * (1 + state.apy) ** (day / 365);
       points.push(Number(projected.toFixed(6)));
     }
@@ -190,4 +191,3 @@ export default function WealthDashboard({
     </section>
   );
 }
-

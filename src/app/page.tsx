@@ -64,6 +64,7 @@ export default function Home() {
   const estimatedDurationSec = durationLabelToSeconds(
     droppedFile?.durationEstimate,
   );
+  const watch10sBlocks = Math.max(0, Math.floor(estimatedDurationSec / 10));
 
   return (
     <div
@@ -310,7 +311,7 @@ export default function Home() {
                   <WealthDashboard
                     userId="local-editor"
                     likes={highlights.length}
-                    watch10sBlocks={Math.max(0, Math.floor(estimatedDurationSec / 10))}
+                    watch10sBlocks={watch10sBlocks}
                     comments={droppedFile ? 1 : 0}
                   />
                 </motion.div>
@@ -506,11 +507,15 @@ export default function Home() {
                     }
                   />
                 </motion.div>
-                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}>
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.55 }}
+                >
                   <WealthDashboard
                     userId="local-classic"
                     likes={highlights.length}
-                    watch10sBlocks={Math.max(0, Math.floor(estimatedDurationSec / 10))}
+                    watch10sBlocks={watch10sBlocks}
                     comments={droppedFile ? 1 : 0}
                   />
                 </motion.div>

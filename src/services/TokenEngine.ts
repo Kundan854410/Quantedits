@@ -22,7 +22,7 @@ export interface WithdrawalReceipt {
   remainingOffChainBalance: number;
 }
 
-const FRACTIONAL_VALUES: Record<MicroInteractionType, number> = {
+export const FRACTIONAL_VALUES: Record<MicroInteractionType, number> = {
   like: 0.001,
   watch_10s: 0.005,
   comment: 0.01,
@@ -46,7 +46,7 @@ export class TokenEngine {
       (FRACTIONAL_VALUES[interaction.type] * quantity).toFixed(6),
     );
     const entry: LedgerEntry = {
-      id: `lx-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`,
+      id: `lx-${crypto.randomUUID()}`,
       type: interaction.type,
       amount,
       occurredAt: interaction.occurredAt ?? new Date().toISOString(),
@@ -85,7 +85,7 @@ export class TokenEngine {
     account.balance = Number((account.balance - normalizedAmount).toFixed(6));
 
     return {
-      id: `wd-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`,
+      id: `wd-${crypto.randomUUID()}`,
       userId,
       destinationWallet,
       amount: normalizedAmount,
@@ -103,4 +103,3 @@ export class TokenEngine {
     return created;
   }
 }
-

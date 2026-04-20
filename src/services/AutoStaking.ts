@@ -20,11 +20,16 @@ interface VaultAccount {
 }
 
 const SECONDS_PER_YEAR = 365 * 24 * 60 * 60;
+export const DEFAULT_AUTO_STAKING_APY = 0.12;
 
 export class AutoStakingVault {
   private readonly accounts = new Map<string, VaultAccount>();
 
-  deposit(userId: string, amount: number, apy = 0.12): StakingSnapshot {
+  deposit(
+    userId: string,
+    amount: number,
+    apy = DEFAULT_AUTO_STAKING_APY,
+  ): StakingSnapshot {
     const account = this.getOrCreateAccount(userId, apy);
     this.accrueToNow(account);
 
@@ -77,7 +82,10 @@ export class AutoStakingVault {
     account.updatedAt = now;
   }
 
-  private getOrCreateAccount(userId: string, apy = 0.12): VaultAccount {
+  private getOrCreateAccount(
+    userId: string,
+    apy = DEFAULT_AUTO_STAKING_APY,
+  ): VaultAccount {
     const existing = this.accounts.get(userId);
     if (existing) return existing;
 
@@ -101,4 +109,3 @@ export class AutoStakingVault {
     };
   }
 }
-
