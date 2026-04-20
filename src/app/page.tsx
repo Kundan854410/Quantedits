@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Video, X, LayoutTemplate, Layers } from "lucide-react";
 import Topbar from "@/components/Topbar";
 import VideoDropZone, { type DroppedFile } from "@/components/VideoDropZone";
 import DeepDub from "@/components/DeepDub";
 import HookGenerator, { type Highlight } from "@/components/HookGenerator";
+import CreatorDashboard from "@/components/CreatorDashboard";
 import MusicStudio from "@/components/MusicStudio";
 import PublishRouter from "@/components/PublishRouter";
 import ReelCapture from "@/components/ReelCapture";
@@ -15,6 +16,18 @@ import GenerativePipelinePanel from "@/components/GenerativePipelinePanel";
 import EngagementPanel from "@/components/EngagementPanel";
 import type { Track } from "@/engine/TimelineRenderer";
 import type { ProjectProbe } from "@/services/engagement/types";
+import { analyzeRetention } from "@/services/RetentionAnalyzer";
+import { generateAutoHooks } from "@/services/AutoHook";
+
+function estimateDurationSeconds(label?: string): number {
+  if (!label) return 120;
+  const normalized = label.toLowerCase();
+  const numeric = Number.parseFloat(normalized);
+  if (normalized.includes("hr")) return Number.isFinite(numeric) ? numeric * 3600 : 7200;
+  if (normalized.includes("min")) return Number.isFinite(numeric) ? numeric * 60 : 300;
+  if (normalized.includes("clip")) return 60;
+  return Number.isFinite(numeric) ? numeric : 120;
+}
 
 export default function Home() {
   const [droppedFile, setDroppedFile] = useState<DroppedFile | null>(null);
@@ -48,6 +61,22 @@ export default function Home() {
     // In production: the response would populate new timeline tracks
     void prompt;
   }, []);
+
+  const retentionAnalysis = useMemo(
+    () =>
+      droppedFile
+        ? analyzeRetention({
+            durationSec: estimateDurationSeconds(droppedFile.durationEstimate),
+            highlights,
+          })
+        : null,
+    [droppedFile, highlights],
+  );
+
+  const autoHookSuggestions = useMemo(
+    () => (retentionAnalysis ? generateAutoHooks(retentionAnalysis) : []),
+    [retentionAnalysis],
+  );
 
   return (
     <div
@@ -249,6 +278,17 @@ export default function Home() {
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
+                >
+                  <CreatorDashboard
+                    analysis={retentionAnalysis}
+                    suggestions={autoHookSuggestions}
+                  />
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.35 }}
                 >
                   <ReelCapture />
                 </motion.div>
@@ -454,6 +494,12 @@ export default function Home() {
                   />
                 </motion.div>
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                  <CreatorDashboard
+                    analysis={retentionAnalysis}
+                    suggestions={autoHookSuggestions}
+                  />
+                </motion.div>
+                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
                   <ReelCapture />
                 </motion.div>
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
@@ -523,4 +569,3 @@ export default function Home() {
     </div>
   );
 }
-
