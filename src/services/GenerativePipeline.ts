@@ -384,7 +384,7 @@ export class GenerativePipeline {
     const latentCount = 4 * latentSize * latentSize;
 
     // Initialise with pure Gaussian noise (x_T in the diffusion forward process)
-    let currentLatent = new Float32Array(latentCount);
+    const currentLatent = new Float32Array(latentCount);
     fillGaussianNoise(currentLatent);
 
     // Simple linear noise schedule (production: use cosine or DDIM schedule)

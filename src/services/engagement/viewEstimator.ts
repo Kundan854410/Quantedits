@@ -74,7 +74,9 @@ export class ViewEstimator {
     const bandMultiplier =
       history.length >= 10 ? 1 : history.length >= 5 ? 1.5 : 2.2;
     const low = Math.max(0, Math.round(center - iqr * bandMultiplier));
-    const high = Math.round(center + iqr * bandMultiplier);
+    // Cap high estimate at 10x median to prevent unrealistic projections
+    const rawHigh = Math.round(center + iqr * bandMultiplier);
+    const high = Math.min(rawHigh, median * 10);
 
     const confidence: ViewEstimate["confidence"] =
       history.length >= 10 ? "high" : history.length >= 3 ? "medium" : "low";

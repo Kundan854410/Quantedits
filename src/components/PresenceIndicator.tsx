@@ -15,7 +15,7 @@
 
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { EditorInfo } from "../services/CollaborationServer";
 
@@ -149,6 +149,13 @@ export function AvatarBubble({
   onClick,
 }: AvatarBubbleProps) {
   const [hovered, setHovered] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+
+  // Update current time every second to show live status
+  React.useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const sizeClass = {
     sm: "w-6 h-6 text-[9px]",
@@ -156,7 +163,7 @@ export function AvatarBubble({
     lg: "w-10 h-10 text-[13px]",
   }[size];
 
-  const lastSeenSec = Math.round((Date.now() - editor.lastSeen) / 1000);
+  const lastSeenSec = Math.round((now - editor.lastSeen) / 1000);
   const isOnline = lastSeenSec < 15;
 
   return (
@@ -241,7 +248,15 @@ export function AvatarBubble({
 // ── EditingStatusBadge ─────────────────────────────────────────────────────
 
 export function EditingStatusBadge({ editor, clipLabel }: EditingStatusBadgeProps) {
-  const isActive = Date.now() - editor.lastSeen < 5000;
+  const [now, setNow] = React.useState(() => Date.now());
+
+  // Update current time every second to show live active status
+  React.useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const isActive = now - editor.lastSeen < 5000;
 
   return (
     <motion.div
