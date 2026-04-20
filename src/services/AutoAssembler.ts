@@ -49,6 +49,27 @@ export interface PredictiveAssemblyPlan {
 }
 
 export const DEFAULT_DURATION_SEC = 45;
+const SYNTHETIC_HOOK_ANCHORS = [0.06, 0.28, 0.56, 0.84] as const;
+const PACING_FACTORS: Record<PredictiveAssemblyPlan["pacingProfile"], number> = {
+  RAPID: 0.22,
+  BALANCED: 0.31,
+  CINEMATIC: 0.42,
+};
+const SEGMENT_LENGTHS: Record<PredictiveAssemblyPlan["pacingProfile"], number> = {
+  RAPID: 2.4,
+  BALANCED: 3.4,
+  CINEMATIC: 5.5,
+};
+const JUMP_CUT_CADENCE: Record<PredictiveAssemblyPlan["pacingProfile"], number> = {
+  RAPID: 1.9,
+  BALANCED: 3.1,
+  CINEMATIC: 4.8,
+};
+const SILENCE_REDUCTION_BASE = 28;
+const SILENCE_REDUCTION_PER_HOOK = 6;
+const SILENCE_REDUCTION_FILESIZE_STEP_MB = 40;
+const MIN_SILENCE_REDUCTION_PCT = 24;
+const MAX_SILENCE_REDUCTION_PCT = 72;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -166,9 +187,7 @@ function normalizeHooks(
       }));
   }
 
-  const defaultAnchors = [0.06, 0.28, 0.56, 0.84];
-
-  return defaultAnchors.map((anchor, index) => {
+  return SYNTHETIC_HOOK_ANCHORS.map((anchor, index) => {
     const startTimeSec = Math.round(durationSec * anchor);
 
     return {
@@ -176,7 +195,7 @@ function normalizeHooks(
       title:
         index === 0
           ? "Cold open reveal"
-          : index === defaultAnchors.length - 1
+          : index === SYNTHETIC_HOOK_ANCHORS.length - 1
             ? "Loop-safe closer"
             : `Momentum beat ${index}`,
       startTimeSec,
@@ -261,23 +280,22 @@ export class AutoAssembler {
       hooks.length,
       input.prompt,
     );
-    const pacingFactor =
-      pacingProfile === "RAPID" ? 0.22 : pacingProfile === "CINEMATIC" ? 0.42 : 0.31;
+    const pacingFactor = PACING_FACTORS[pacingProfile];
     const targetDurationSec = clamp(
       Math.round(sourceDurationSec * pacingFactor),
       14,
       75,
     );
-    const segmentLength =
-      pacingProfile === "RAPID" ? 2.4 : pacingProfile === "CINEMATIC" ? 5.5 : 3.4;
+    const segmentLength = SEGMENT_LENGTHS[pacingProfile];
     const segmentCount = Math.max(4, Math.round(targetDurationSec / segmentLength));
     const silenceReductionPct = clamp(
-      28 + hooks.length * 6 + Math.round(input.fileSizeMB / 40),
-      24,
-      72,
+      SILENCE_REDUCTION_BASE +
+        hooks.length * SILENCE_REDUCTION_PER_HOOK +
+        Math.round(input.fileSizeMB / SILENCE_REDUCTION_FILESIZE_STEP_MB),
+      MIN_SILENCE_REDUCTION_PCT,
+      MAX_SILENCE_REDUCTION_PCT,
     );
-    const jumpCutCadenceSec =
-      pacingProfile === "RAPID" ? 1.9 : pacingProfile === "CINEMATIC" ? 4.8 : 3.1;
+    const jumpCutCadenceSec = JUMP_CUT_CADENCE[pacingProfile];
     const audioBed = getAudioBed(intent, pacingProfile);
     const sourceWindows = buildSourceWindows(
       sourceDurationSec,

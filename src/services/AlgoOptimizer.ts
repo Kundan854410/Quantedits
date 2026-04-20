@@ -33,6 +33,12 @@ export interface PredictiveOptimizationReport {
   exportRecommendation: ExportRecommendation;
 }
 
+const RETENTION_SCORE_WEIGHTS = {
+  hookCoverage: 0.38,
+  pacing: 0.34,
+  silenceReduction: 0.28,
+} as const;
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
@@ -138,9 +144,9 @@ export class AlgoOptimizer {
     );
     const retentionScore = clamp(
       Math.round(
-        hookCoverageScore * 0.38 +
-          pacingScore * 0.34 +
-          plan.silenceReductionPct * 0.28,
+        hookCoverageScore * RETENTION_SCORE_WEIGHTS.hookCoverage +
+          pacingScore * RETENTION_SCORE_WEIGHTS.pacing +
+          plan.silenceReductionPct * RETENTION_SCORE_WEIGHTS.silenceReduction,
       ),
       70,
       96,
