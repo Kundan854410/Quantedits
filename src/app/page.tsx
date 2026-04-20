@@ -19,15 +19,18 @@ import type { ProjectProbe } from "@/services/engagement/types";
 import { analyzeRetention } from "@/services/RetentionAnalyzer";
 import { generateAutoHooks } from "@/services/AutoHook";
 
-function estimateDurationSeconds(label?: string): number {
-  if (!label) return 120;
-  const normalized = label.toLowerCase();
+function parseDurationLabel(durationLabel?: string): number {
+  if (!durationLabel) return 120;
+  const normalized = durationLabel.toLowerCase();
   const numeric = Number.parseFloat(normalized);
   if (normalized.includes("hr")) return Number.isFinite(numeric) ? numeric * 3600 : 7200;
   if (normalized.includes("min")) return Number.isFinite(numeric) ? numeric * 60 : 300;
   if (normalized.includes("clip")) return 60;
   return Number.isFinite(numeric) ? numeric : 120;
 }
+
+const CREATOR_DASHBOARD_DELAY = 0.3;
+const REEL_CAPTURE_DELAY = 0.35;
 
 export default function Home() {
   const [droppedFile, setDroppedFile] = useState<DroppedFile | null>(null);
@@ -66,7 +69,7 @@ export default function Home() {
     () =>
       droppedFile
         ? analyzeRetention({
-            durationSec: estimateDurationSeconds(droppedFile.durationEstimate),
+            durationSec: parseDurationLabel(droppedFile.durationEstimate),
             highlights,
           })
         : null,
@@ -76,6 +79,13 @@ export default function Home() {
   const autoHookSuggestions = useMemo(
     () => (retentionAnalysis ? generateAutoHooks(retentionAnalysis) : []),
     [retentionAnalysis],
+  );
+
+  const creatorDashboardPanel = (
+    <CreatorDashboard
+      analysis={retentionAnalysis}
+      suggestions={autoHookSuggestions}
+    />
   );
 
   return (
@@ -277,18 +287,15 @@ export default function Home() {
                 <motion.div
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
+                  transition={{ delay: CREATOR_DASHBOARD_DELAY }}
                 >
-                  <CreatorDashboard
-                    analysis={retentionAnalysis}
-                    suggestions={autoHookSuggestions}
-                  />
+                  {creatorDashboardPanel}
                 </motion.div>
 
                 <motion.div
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.35 }}
+                  transition={{ delay: REEL_CAPTURE_DELAY }}
                 >
                   <ReelCapture />
                 </motion.div>
@@ -493,13 +500,10 @@ export default function Home() {
                     onHighlightsReady={setHighlights}
                   />
                 </motion.div>
-                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-                  <CreatorDashboard
-                    analysis={retentionAnalysis}
-                    suggestions={autoHookSuggestions}
-                  />
+                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: CREATOR_DASHBOARD_DELAY }}>
+                  {creatorDashboardPanel}
                 </motion.div>
-                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
+                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: REEL_CAPTURE_DELAY }}>
                   <ReelCapture />
                 </motion.div>
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>

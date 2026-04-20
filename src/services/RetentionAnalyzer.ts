@@ -75,6 +75,9 @@ const DEFAULT_PROFILES: RetentionProfile[] = [
 ];
 
 const MAX_DIPS = 8;
+const DEFAULT_HOOK_SCORE = 70;
+const COLOR_TEMP_NORMALIZATION_RANGE = 2500;
+const HOOK_PROXIMITY_THRESHOLD_SEC = 3;
 
 function clamp01(value: number): number {
   if (value <= 0) return 0;
@@ -82,7 +85,7 @@ function clamp01(value: number): number {
   return value;
 }
 
-function parseSecondsFromTimecode(timecode: string): number {
+function parseTimecodeToSeconds(timecode: string): number {
   const parts = timecode.split(":").map((v) => Number(v));
   if (parts.some((v) => Number.isNaN(v))) return 0;
   if (parts.length === 2) return parts[0] * 60 + parts[1];
@@ -98,12 +101,12 @@ function parseDurationSeconds(duration: string): number {
 
 function buildHighlightWindows(highlights: RetentionProbeHighlight[]) {
   return highlights.map((h) => {
-    const startSec = parseSecondsFromTimecode(h.startTimecode);
+    const startSec = parseTimecodeToSeconds(h.startTimecode);
     const durationSec = Math.max(1, parseDurationSeconds(h.duration));
     return {
       startSec,
       endSec: startSec + durationSec,
-      normalizedHook: clamp01((h.hookScore ?? 70) / 100),
+      normalizedHook: clamp01((h.hookScore ?? DEFAULT_HOOK_SCORE) / 100),
     };
   });
 }
@@ -117,7 +120,8 @@ function profileSimilarity(
   const sceneDistance = Math.abs(sceneChangeRate - profile.sceneChangeRate);
   const motionDistance = Math.abs(motionIntensity - profile.motionIntensity);
   const colorDistance =
-    Math.abs(colorTemperatureK - profile.colorTemperatureK) / 2500;
+    Math.abs(colorTemperatureK - profile.colorTemperatureK) /
+    COLOR_TEMP_NORMALIZATION_RANGE;
   const distance =
     sceneDistance * 0.4 + motionDistance * 0.4 + colorDistance * 0.2;
   return clamp01(1 - distance);
@@ -147,7 +151,7 @@ export function analyzeRetention({
           Math.abs(timeSec - window.startSec),
           Math.abs(timeSec - window.endSec),
         );
-        if (distance <= 3) {
+        if (distance <= HOOK_PROXIMITY_THRESHOLD_SEC) {
           hookBoost = Math.max(hookBoost, window.normalizedHook * 0.15);
         }
       }
@@ -169,6 +173,7 @@ export function analyzeRetention({
     );
     const bestSimilarity = similarities.reduce((best, next) =>
       next > best ? next : best,
+      0,
     );
 
     const resonanceScore = Math.round(
@@ -215,4 +220,3 @@ export function analyzeRetention({
     comparedProfiles: DEFAULT_PROFILES,
   };
 }
-

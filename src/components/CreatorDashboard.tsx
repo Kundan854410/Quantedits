@@ -8,6 +8,9 @@ export interface CreatorDashboardProps {
   suggestions: AutoHookSuggestion[];
 }
 
+const MIN_BAR_HEIGHT = 8;
+const RESONANCE_HEIGHT_SCALE = 0.9;
+
 function formatTime(seconds: number): string {
   const clamped = Math.max(0, Math.round(seconds));
   const min = Math.floor(clamped / 60);
@@ -60,7 +63,10 @@ export default function CreatorDashboard({
             </div>
             <div className="h-24 w-full rounded-lg border border-[#1E1E2E] bg-[#0b0b13] p-1 flex items-end gap-[2px]">
               {analysis.timeline.map((point) => {
-                const height = Math.max(8, Math.round(point.resonanceScore * 0.9));
+                const height = Math.max(
+                  MIN_BAR_HEIGHT,
+                  Math.round(point.resonanceScore * RESONANCE_HEIGHT_SCALE),
+                );
                 const dip = point.predictedDropoff;
                 return (
                   <div
@@ -153,4 +159,3 @@ export default function CreatorDashboard({
     </section>
   );
 }
-
