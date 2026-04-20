@@ -90,8 +90,10 @@ export async function POST(request: NextRequest) {
 
   log.info({ jobId: job.id, projectId, format, resolution, fps }, "Export job created");
 
-  // Background simulation
-  void simulateExport(job.id, projectId, format);
+  // Background simulation with error logging
+  simulateExport(job.id, projectId, format).catch((err) => {
+    log.error({ err, jobId: job.id }, "Export job simulation failed");
+  });
 
   return Response.json({ job }, { status: 201 });
 }

@@ -363,7 +363,6 @@ interface CommentThreadPanelProps {
 
 function CommentThreadPanel({
   thread,
-  currentUserId,
   currentUserName,
   collaborators,
   onReply,

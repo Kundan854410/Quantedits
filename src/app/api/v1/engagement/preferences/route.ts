@@ -25,6 +25,17 @@ export async function GET(request: NextRequest) {
   return Response.json({ preferences: prefs }, { status: 200 });
 }
 
+// Simple validation for IANA timezone format
+const isValidTimezone = (tz: string): boolean => {
+  try {
+    // Test if the timezone is valid by using Intl API
+    Intl.DateTimeFormat(undefined, { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 const PatchSchema = z
   .object({
     suggestionsEnabled: z.boolean().optional(),
@@ -37,7 +48,9 @@ const PatchSchema = z
     draftReminderMaxPerWeek: z.number().int().min(0).max(14).optional(),
     quietHoursStart: z.number().int().min(0).max(23).optional(),
     quietHoursEnd: z.number().int().min(0).max(23).optional(),
-    timezone: z.string().min(1).max(64).optional(),
+    timezone: z.string().min(1).max(64).refine(isValidTimezone, {
+      message: "Invalid IANA timezone identifier",
+    }).optional(),
   })
   .strict();
 

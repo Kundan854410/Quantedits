@@ -107,8 +107,10 @@ export async function POST(request: NextRequest) {
 
   log.info({ operationId: operation.id, clipId, type }, "AI operation enqueued");
 
-  // Background simulation
-  void simulateAIOperation(operation.id, type);
+  // Background simulation with error logging
+  simulateAIOperation(operation.id, type).catch((err) => {
+    log.error({ err, operationId: operation.id }, "AI operation simulation failed");
+  });
 
   return Response.json({ operation }, { status: 201 });
 }
